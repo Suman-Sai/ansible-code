@@ -1,0 +1,100 @@
+---
+# This playbook will download, unzip, install and start Apache Tomcat
+
+# HEADER SECTION
+ - name: This playbook will download, unzip, install and start Apache Tomcat
+   hosts: webservers
+   gather_facts: True
+   vars:
+     java_apt: openjdk-11-jdk
+     java_yum: java-11-amazon-corretto-devel
+     download_url: https://dlcdn.apache.org/tomcat/tomcat-8/v8.5.90/bin/apache-tomcat-8.5.90.tar.gz
+     tomcat: apache-tomcat-8.5.90
+     group_name: tomcatadm
+     user_name: tomcat
+
+# TASK SECTION
+   tasks:
+     - name: To install java on Ubuntu as its mandatory dependency
+       apt:
+         name: "{{ java_apt }}"
+         state: present
+       when: ( ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "18" )
+
+     - name: To install java on EL Linux as its mandatory dependency
+       yum:
+         name: "{{ java_yum }}"
+         state: installed
+       when:
+         ansible_distribution == "Amazon"
+
+     - name: To create a group
+       group:
+         name: "{{ group_name }}"
+         state: present
+
+     - name: To create a user
+       user:
+         name: "{{ user_name }}"
+         state: present
+         uid: 2001
+         generate_ssh_key: true
+         comment: "creating user through ansible"
+         groups: "{{ group_name }}"
+
+     - name: to create a dir
+       file:
+         path: /opt/tomcat_backup
+         state: directory
+         mode: 0644
+         owner: "{{ user_name }}"
+         group: "{{ group_name }}"
+
+     - name: To download apache tomcat
+       get_url: 
+         url: "{{ download_url }}" 
+         mode: 0755
+         dest: /opt/{{ tomcat }}.tar.gz
+         backup: yes
+         timeout: 20
+         owner: "{{ user_name }}"
+         group: "{{ group_name }}"
+
+     - name: To untar and unzip the package
+       unarchive:
+         src: /opt/{{ tomcat }}.tar.gz
+         dest: /opt/
+         mode: 0755
+         remote_src: yes
+         owner: "{{ user_name }}"
+         group: "{{ group_name }}"
+
+     - name: to fetch the server.xml file from remote servers
+       fetch:
+         src: "/opt/{{ tomcat }}/conf/server.xml"
+         dest: /opt/
+
+     - name: To update the apache tomcat config
+       copy:
+         src: /opt/server.xml
+         dest: /opt/{{ tomcat }}/conf/server.xml
+         owner: "{{ user_name }}"
+         group: "{{ group_name }}"
+       ignore_errors: yes
+
+     - name: To copy apache tomcat
+       copy:
+         src: /opt/ansible-code/playbooks/tomcat.service
+         dest: /etc/systemd/system
+         mode: 0644
+         owner: root
+         group: root
+
+     - name: To Reload the service file with systemd
+       systemd:
+         daemon_reload: true
+
+     - name: To start the service
+       service:
+         name: tomcat
+         state: started

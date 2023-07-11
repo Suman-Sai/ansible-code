@@ -1,0 +1,37 @@
+---
+ - name: This code will execute in my remote machines
+   hosts: webservers
+   vars:
+     path: /usr/share/nginx/html
+
+   tasks:
+     - name: install nginx on aws linux 2
+       command: sudo amazon-linux-extras install -y nginx1
+
+     - name: Install nginx webserver
+       package:
+         name: "{{ item }}"
+         state: present
+       loop:
+         - curl
+         - git
+
+     - name: start nginx web servers
+       service:
+         name: nginx
+         state: stopped
+
+     - name: Clear the web server static directory
+       file:
+         path: "{{ path }}"
+         state: absent
+
+     - name: To copy the built code and deploy to nginx
+       copy:
+         src: /opt/calculator/build/
+         dest: "{{ path }}"
+
+     - name: start nginx web servers
+       service:
+         name: nginx
+         state: started

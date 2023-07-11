@@ -1,0 +1,19 @@
+---
+# This Playbook will define vairables and use them across the code
+
+# HEADER SECTION
+ - name: This play will install a package and copy a file
+   hosts: webservers
+
+# TASK SECTION
+   tasks:
+     - package:
+         name: "{{ package_name }}"
+         state: absent
+
+     - file:
+         name: "/opt/{{ file_name }}"
+         mode: 0644
+         owner: tomcat
+         group: tomcat
+         state: touch

@@ -1,0 +1,26 @@
+---
+# This is my first playbook
+
+# HEADER SECTION
+ - name: This play will create a file
+   hosts: webServers
+
+# TASK SECTION
+   tasks:
+     - name: Creating a file called helloworld.html
+       file:
+         path: /opt/ansible
+         state: directory
+         owner: root
+         group: root
+         mode: 0755
+         recurse: yes
+
+     - name: Creating a HTML File
+       file:
+         path: /opt/ansible/helloworld.html
+         state: touch
+         owner: root
+         group: root
+         mode: 0755
+
